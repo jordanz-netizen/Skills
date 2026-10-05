@@ -24,42 +24,59 @@ auto-deactivated the webhook scenario ("Fix the error or clear the queue").
 
 ## Fix (applied directly to the live scenario)
 
-The Code chunker + Iterator pair on each branch was replaced with native Make
-modules, which have no sandbox time limit:
+### Round 1: no more Code-app chunker
 
-| Old module | New module | Purpose |
-|---|---|---|
-| 6 / 61 `code:ExecuteCode` (chunker) | 74 / 76 `util:SetVariables` | Stores `pdfText`, `pdfLength`, `totalChunks` once per run |
-| 15 / 62 `builtin:BasicFeeder` (Iterator) | 75 / 77 `builtin:BasicRepeater` | Emits one bundle per chunk (`i` = chunk number) |
-
-Chunking math (350,000-char chunks plus a 5,000-char overlap so a record cut
-at a boundary is still whole in the next chunk):
+The Code chunker + Iterator pair was replaced with native Make modules
+(Set variables + Repeater + `substring()`), which have no sandbox time limit.
+Chunk size was also reduced from 600,000 to 350,000 characters: the first live
+run showed dense evidence text tokenizing at about 2.9 chars per token, so one
+600,000-char chunk reached 209,318 tokens and Claude rejected it
+(`[400] prompt is too long: 209318 tokens > 200000 maximum`).
 
 ```
 totalChunks = if(len <= 350000; 1; ceil((len - 350000) / 345000) + 1)
 chunk i     = substring(pdfText; (i - 1) * 345000; (i - 1) * 345000 + 350000)
 ```
 
-The old code used 600,000-char chunks (it assumed 4 chars per token). The first
-live run after the fix showed that dense evidence text tokenizes at about 2.9
-chars per token: one 600,000-char chunk came to 209,318 tokens and Claude
-rejected it (`[400] prompt is too long: 209318 tokens > 200000 maximum`).
-350,000 chars stays under the 200k-token window even at 2 chars per token with
-the 10k-token output budget included.
+This fixed the reported error: 41 queued jobs then ran through cleanly.
 
-Downstream modules were rewired:
+### Round 2: the scenario chains itself so any file size fits Make's 40-minute limit
 
-- Claude "Step 1" modules 30 / 63: `evidence_text`, `chunk_number`,
-  `total_chunks` now come from the Set-variables + Repeater modules.
-- Array aggregators 17 / 64: source changed from the Iterator to the Repeater.
-- A filter "PDF text not empty" on the Set-variables module stops the run when
-  PDF.co returned no text (the old code threw "No text from PDF.co").
+The three largest stranded files (9.9 MB, 18 MB and 22.6 MB PDFs, each with
+well over 25 MB of extracted text) then hit a different ceiling. Make stops any
+single execution after 40 minutes (+5 min grace), and Make sends chunks to
+Claude one after another at ~35 s each, so 67-77 chunks could not finish in one
+run. All three runs ended with a warning at exactly 45:00 before the final merge
+and callback.
 
-The Step-1 -> Text aggregator -> Step-2 -> parser -> Supabase callback chain is
-unchanged. The Code modules that parse Claude's final answer (21 / 68) still
-exist; they handle a small input and were never the problem.
+The scenario now splits a job across several of its own executions:
+
+| Route | Filter | What it does |
+|---|---|---|
+| 1 "from google drive" | `file.google_drive_file_id` exists AND `continuation.text_url` does not | Google Drive download -> PDF.co text extraction (link valid 1440 min) -> module 78 POSTs the job back to this scenario's own webhook with `continuation.text_url`, `next_chunk = 1`, `merged_so_far = ""` |
+| 2 "from attachment URL" | `file.download_url` exists AND `continuation.text_url` does not | same, from the download URL |
+| 3 "continuation: process chunk batch" | `continuation.text_url` exists | downloads the text, computes the chunk count, runs Step 1 on at most **15 chunks** (`next_chunk` .. `next_chunk+14`), runs Step 2 to merge this batch into `merged_so_far`, then either POSTs itself again with `next_chunk + 15` and the new merged result, or, on the last batch, runs the parser (fail-soft version) and the Supabase callback |
+
+Each execution therefore stays around 10-15 minutes. Step 2 never sees more
+than one batch of chunk outputs plus the single running merged result, which also
+keeps the final merge inside Claude's 200k-token window regardless of file size.
+A 76-chunk document takes about six chained executions (roughly an hour of wall
+time) but completes and reports back.
+
+The continuation payload carries the original `contract_version`, `job_id`,
+`sync_run_id`, `file`, `control`, `extraction` and `callback` objects
+(serialized with `toJSON()`), so the processing route needs nothing else.
+
+Known limits left as they were:
+
+- An unhandled error (PDF.co failure, Claude API error) still stops the run and,
+  because the trigger is a webhook, deactivates the scenario until it is turned
+  back on. Jobs received while it is off wait in the webhook queue.
+- Empty extracted text stops the run at the "PDF text not empty" filter without
+  a callback, exactly like the old "No text from PDF.co" error.
 
 ## Files
 
 - `blueprint.before.json` - export of the scenario before the fix
-- `blueprint.after.json` - blueprint that is now deployed
+- `blueprint.after.json` - blueprint that is now deployed (round 2)
+- `build_blueprint.py` - script that produced it from the round-1 blueprint
