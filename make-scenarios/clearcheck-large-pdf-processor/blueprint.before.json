@@ -1,0 +1,1647 @@
+{
+  "name": "[SOC 2 ClearCheck Backup - Large PDF Processor]",
+  "flow": [
+    {
+      "id": 2,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": 2605135,
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": {
+          "x": -1681,
+          "y": -264
+        },
+        "restore": {
+          "parameters": {
+            "hook": {
+              "data": {
+                "editable": "true"
+              },
+              "label": "My gateway-webhook webhook"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 57,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "mapper": null,
+      "metadata": {
+        "designer": {
+          "x": -1381,
+          "y": -264
+        }
+      },
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 3,
+              "module": "google-drive:getAFile",
+              "version": 4,
+              "parameters": {
+                "__IMTCONN__": 1122503
+              },
+              "filter": {
+                "name": "from google drive",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.file.google_drive_file_id}}",
+                      "o": "exist"
+                    }
+                  ]
+                ]
+              },
+              "mapper": {
+                "file": "{{2.file.google_drive_file_id}}",
+                "select": "map",
+                "formatDrawings": "image/jpeg",
+                "formatDocuments": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "formatSpreadsheets": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "formatPresentations": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+              },
+              "metadata": {
+                "designer": {
+                  "x": -1294,
+                  "y": -609
+                },
+                "restore": {
+                  "expect": {
+                    "select": {
+                      "label": "Enter manually"
+                    },
+                    "formatDrawings": {
+                      "label": "JPEG"
+                    },
+                    "formatDocuments": {
+                      "label": "MS Word Document"
+                    },
+                    "formatSpreadsheets": {
+                      "label": "MS Excel"
+                    },
+                    "formatPresentations": {
+                      "label": "MS PowerPoint"
+                    }
+                  },
+                  "parameters": {
+                    "__IMTCONN__": {
+                      "data": {
+                        "scoped": "true",
+                        "connection": "google-restricted"
+                      },
+                      "label": "My Google Restricted connection (jzhang@decrypt.cpa)"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 4,
+              "module": "pdf-co:PDFToAnything",
+              "version": 1,
+              "parameters": {
+                "__IMTCONN__": 7007554
+              },
+              "mapper": {
+                "async": 15000,
+                "export": {
+                  "exportType": "inline"
+                },
+                "import": {
+                  "data": "{{3.data}}",
+                  "name": "{{3.name}}",
+                  "importType": "upload"
+                },
+                "inline": false,
+                "convert": {
+                  "convertType": "toText"
+                },
+                "expiration": 60
+              },
+              "metadata": {
+                "designer": {
+                  "x": -968,
+                  "y": -601
+                },
+                "restore": {
+                  "expect": {
+                    "async": {
+                      "mode": "chose",
+                      "label": "Async"
+                    },
+                    "export": {
+                      "nested": {
+                        "exportType": {
+                          "label": "JSON Output"
+                        }
+                      }
+                    },
+                    "import": {
+                      "nested": {
+                        "importType": {
+                          "label": "Upload a File"
+                        }
+                      }
+                    },
+                    "inline": {
+                      "mode": "chose"
+                    },
+                    "convert": {
+                      "nested": {
+                        "convertType": {
+                          "label": "PDF to Text"
+                        }
+                      }
+                    }
+                  },
+                  "parameters": {
+                    "__IMTCONN__": {
+                      "data": {
+                        "scoped": "true",
+                        "connection": "pdf-co"
+                      },
+                      "label": "Decrypt_ISO27001"
+                    }
+                  }
+                },
+                "advanced": true
+              },
+              "onerror": [
+                {
+                  "id": 71,
+                  "module": "builtin:Ignore",
+                  "version": 1,
+                  "parameters": {},
+                  "mapper": {},
+                  "metadata": {
+                    "designer": {
+                      "x": -668,
+                      "y": -451
+                    },
+                    "restore": {}
+                  }
+                }
+              ]
+            },
+            {
+              "id": 72,
+              "module": "http:ActionGetFile",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false
+              },
+              "mapper": {
+                "url": "{{4.url}}",
+                "method": "get",
+                "serializeUrl": false,
+                "shareCookies": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": -818,
+                  "y": -601,
+                  "name": "Download extracted text"
+                },
+                "restore": {}
+              }
+            },
+            {
+              "id": 6,
+              "module": "code:ExecuteCode",
+              "version": 0,
+              "parameters": {},
+              "mapper": {
+                "input": [
+                  {
+                    "name": "pdfBody",
+                    "value": "{{toString(72.data)}}"
+                  }
+                ],
+                "language": "javascript",
+                "inputFormat": "editor",
+                "dependencies": [],
+                "codeEditorJavascript": "// ============================================\n// Enhanced PDF Text Chunker - Handles Large Single Sections\n// ============================================\n\n// Configuration (Using your larger limits)\nconst MAX_TOKENS_PER_CHUNK = 150000;\nconst CHARS_PER_TOKEN = 4;\nconst MAX_CHARS = MAX_TOKENS_PER_CHUNK * CHARS_PER_TOKEN; // 600,000\nconst HARD_SPLIT_OVERLAP = 1000; // Overlap when a single section is too large\n\nlet pdfText = \"\";\n\n// Handle input (assuming environment like Zapier/Make)\nif (typeof input !== 'undefined' && input.pdfBody) {\n    if (typeof input.pdfBody === 'string') {\n        pdfText = input.pdfBody;\n    } else if (typeof input.pdfBody === 'object') {\n        pdfText = JSON.stringify(input.pdfBody);\n    } else {\n        pdfText = String(input.pdfBody);\n    }\n}\n\nif (!pdfText || pdfText.length === 0) {\n    throw new Error(\"No text from PDF.co\");\n}\n\nconsole.log(`✓ Input: ${pdfText.length} chars`);\n\n// Strategy 1: Try to split by PR entries (Timestamp field)\n// Lookahead keeps the delimiter attached to the resulting chunks\nlet entries = pdfText.split(/(?=\"Timestamp\":|\"Pull Request Number\":)/);\nlet sections = entries.length > 5 ? entries : [];\n\nif (sections.length > 0) {\n    console.log(`✓ Strategy 1: Found ${sections.length} PR entries`);\n}\n\n// Strategy 2: If no PR splits, try evidence sections\nif (sections.length === 0) {\n    const sectionPattern = /Evidence - Source Control[\\s\\S]*?(?=Evidence - Source Control|$)/gi;\n    const matches = pdfText.match(sectionPattern);\n    \n    if (matches && matches.length > 1) {\n        sections = matches;\n        console.log(`✓ Strategy 2: Using ${sections.length} evidence sections`);\n    }\n}\n\n// Strategy 3: Split by paragraphs\nif (sections.length === 0) {\n    console.log(`⚠ Strategy 3: Using paragraph splits`);\n    sections = pdfText.split(/\\n\\n+/).filter(s => s.trim().length > 0);\n}\n\n// Build chunks respecting MAX_CHARS limit\nconst chunks = [];\nlet currentChunk = \"\";\n\nfor (let i = 0; i < sections.length; i++) {\n    const section = sections[i];\n    const separator = currentChunk.length > 0 ? \"\\n\\n\" : \"\";\n    \n    // If a single section exceeds MAX_CHARS, split it forcefully with a small overlap\n    if (section.length > MAX_CHARS) {\n        console.log(`⚠ Section ${i+1} too large (${section.length} chars), forcing split...`);\n        \n        // Save current chunk if it has content\n        if (currentChunk.length > 0) {\n            chunks.push({\n                text: currentChunk,\n                chunkNumber: chunks.length + 1,\n                charCount: currentChunk.length,\n                estimatedTokens: Math.floor(currentChunk.length / CHARS_PER_TOKEN)\n            });\n            currentChunk = \"\";\n        }\n        \n        // Split the massive section into sub-chunks with overlap\n        for (let start = 0; start < section.length; start += (MAX_CHARS - HARD_SPLIT_OVERLAP)) {\n            const subChunk = section.substring(start, Math.min(start + MAX_CHARS, section.length));\n            chunks.push({\n                text: subChunk,\n                chunkNumber: chunks.length + 1,\n                charCount: subChunk.length,\n                estimatedTokens: Math.floor(subChunk.length / CHARS_PER_TOKEN)\n            });\n            console.log(`  Created sub-chunk ${chunks.length}: ${subChunk.length} chars`);\n        }\n        continue; // Move to the next section\n    }\n    \n    // Check if adding this section exceeds limit\n    if ((currentChunk.length + separator.length + section.length) > MAX_CHARS && currentChunk.length > 0) {\n        // Limit reached: Save current chunk\n        chunks.push({\n            text: currentChunk,\n            chunkNumber: chunks.length + 1,\n            charCount: currentChunk.length,\n            estimatedTokens: Math.floor(currentChunk.length / CHARS_PER_TOKEN)\n        });\n        \n        console.log(`✓ Chunk ${chunks.length}: ${currentChunk.length} chars`);\n        \n        // Start a new chunk with the current section\n        currentChunk = section;\n    } else {\n        // Safe to add to current chunk\n        currentChunk += separator + section;\n    }\n}\n\n// Add the final chunk if anything is left over\nif (currentChunk.length > 0) {\n    chunks.push({\n        text: currentChunk,\n        chunkNumber: chunks.length + 1,\n        charCount: currentChunk.length,\n        estimatedTokens: Math.floor(currentChunk.length / CHARS_PER_TOKEN)\n    });\n    console.log(`✓ Final chunk ${chunks.length}: ${currentChunk.length} chars`);\n}\n\n// Add metadata output\nconst output = chunks.map(chunk => ({\n    text: chunk.text,\n    chunkNumber: chunk.chunkNumber,\n    totalChunks: chunks.length,\n    charCount: chunk.charCount,\n    estimatedTokens: chunk.estimatedTokens,\n    percentageOfTotal: Math.round((chunk.charCount / pdfText.length) * 100),\n    preview: chunk.text.substring(0, 150) + \"...\"\n}));\n\nconsole.log(`\\n=== SUMMARY ===`);\nconsole.log(`✓ Created ${output.length} chunks`);\nconsole.log(`✓ Input: ${pdfText.length} chars (~${Math.floor(pdfText.length / CHARS_PER_TOKEN)} tokens)`);\nconsole.log(`✓ Largest chunk: ${Math.max(...output.map(c => c.estimatedTokens))} tokens`);\nconsole.log(`✓ All chunks under limit: ${Math.max(...output.map(c => c.charCount)) <= MAX_CHARS ? 'YES ✓' : 'NO ✗'}`);\n\nreturn output;"
+              },
+              "metadata": {
+                "designer": {
+                  "x": -668,
+                  "y": -751
+                },
+                "restore": {
+                  "expect": {
+                    "input": {
+                      "items": [
+                        null
+                      ]
+                    },
+                    "language": {
+                      "mode": "chose",
+                      "label": "JavaScript"
+                    },
+                    "inputFormat": {
+                      "label": "Code editor"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 15,
+              "module": "builtin:BasicFeeder",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "array": "{{6.result}}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": -290,
+                  "y": -611
+                },
+                "restore": {
+                  "expect": {
+                    "array": {
+                      "mode": "edit"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 30,
+              "module": "anthropic-claude:createAMessage",
+              "version": 1,
+              "parameters": {
+                "__IMTCONN__": 8771054
+              },
+              "mapper": {
+                "model": "claude-haiku-4-5-20251001",
+                "system": "{{2.extraction.step_1.system_prompt}}",
+                "messages": [
+                  {
+                    "role": "user",
+                    "content": [
+                      {
+                        "text": "{{replace(replace(replace(replace(replace(replace(2.extraction.step_1.user_prompt_template; \"/\\{\\{control_description\\}\\}/g\"; 2.control.description); \"/\\{\\{tscs\\}\\}/g\"; 2.control.tscs); \"/\\{\\{expected_procedures\\}\\}/g\"; 2.control.expected_procedures); \"/\\{\\{evidence_text\\}\\}/g\"; 15.text); \"/\\{\\{chunk_number\\}\\}/g\"; 15.chunkNumber); \"/\\{\\{total_chunks\\}\\}/g\"; 15.totalChunks)}}",
+                        "type": "text"
+                      }
+                    ],
+                    "inputType": "multiple"
+                  }
+                ],
+                "metadata": {},
+                "thinking": {
+                  "type": "disabled"
+                },
+                "container": {},
+                "max_tokens": 10000,
+                "temperature": 1,
+                "tool_choice": {},
+                "outputFormat": {
+                  "type": "text"
+                }
+              },
+              "metadata": {
+                "designer": {
+                  "x": -37,
+                  "y": -371,
+                  "name": "Step 1: Signal-Based Screene"
+                },
+                "restore": {
+                  "expect": {
+                    "model": {
+                      "mode": "chose",
+                      "label": "Claude Haiku 4.5"
+                    },
+                    "tools": {
+                      "mode": "chose"
+                    },
+                    "messages": {
+                      "mode": "chose",
+                      "items": [
+                        {
+                          "role": {
+                            "mode": "chose",
+                            "label": "User"
+                          },
+                          "content": {
+                            "mode": "chose",
+                            "items": [
+                              {
+                                "type": {
+                                  "mode": "chose",
+                                  "label": "Text"
+                                }
+                              }
+                            ]
+                          },
+                          "inputType": {
+                            "mode": "chose",
+                            "label": "Multiple content blocks"
+                          }
+                        }
+                      ]
+                    },
+                    "thinking": {
+                      "nested": {
+                        "type": {
+                          "mode": "chose",
+                          "label": "Disabled"
+                        }
+                      }
+                    },
+                    "container": {
+                      "nested": {
+                        "skills": {
+                          "mode": "chose"
+                        }
+                      }
+                    },
+                    "mcp_servers": {
+                      "mode": "chose"
+                    },
+                    "tool_choice": {
+                      "nested": {
+                        "type": {
+                          "mode": "chose",
+                          "label": "Empty"
+                        }
+                      }
+                    },
+                    "outputFormat": {
+                      "nested": {
+                        "type": {
+                          "mode": "chose",
+                          "label": "Text"
+                        }
+                      }
+                    },
+                    "stop_sequences": {
+                      "mode": "chose"
+                    },
+                    "additionalParameters": {
+                      "mode": "chose"
+                    }
+                  },
+                  "parameters": {
+                    "__IMTCONN__": {
+                      "data": {
+                        "scoped": "true",
+                        "connection": "anthropic-claude"
+                      },
+                      "label": "My Anthropic Claude connection2026.05"
+                    }
+                  }
+                },
+                "advanced": true
+              }
+            },
+            {
+              "id": 17,
+              "module": "builtin:BasicAggregator",
+              "version": 1,
+              "parameters": {
+                "feeder": 15
+              },
+              "mapper": {
+                "id": "{{30.id}}",
+                "role": "{{30.role}}",
+                "type": "{{30.type}}",
+                "files": "{{30.files}}",
+                "model": "{{30.model}}",
+                "tools": "{{30.tools}}",
+                "usage": "{{30.usage}}",
+                "value": "{{15.value}}",
+                "content": "{{30.content}}",
+                "container": "{{30.container}}",
+                "stop_reason": "{{30.stop_reason}}",
+                "__IMTINDEX__": "{{15.`__IMTINDEX__`}}",
+                "stop_details": "{{30.stop_details}}",
+                "textResponse": "{{30.textResponse}}",
+                "__IMTLENGTH__": "{{15.`__IMTLENGTH__`}}",
+                "stop_sequence": "{{30.stop_sequence}}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 129,
+                  "y": -666
+                },
+                "restore": {
+                  "extra": {
+                    "feeder": {
+                      "label": "Iterator"
+                    },
+                    "target": {
+                      "label": "Custom"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 52,
+              "module": "util:TextAggregator",
+              "version": 1,
+              "parameters": {
+                "feeder": 17,
+                "rowSeparator": "\n"
+              },
+              "mapper": {
+                "value": "{{17.array[].textResponse}}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 429,
+                  "y": -666
+                },
+                "restore": {
+                  "extra": {
+                    "feeder": {
+                      "label": "Array aggregator"
+                    }
+                  },
+                  "parameters": {
+                    "rowSeparator": {
+                      "label": "New row"
+                    }
+                  }
+                },
+                "advanced": true
+              }
+            },
+            {
+              "id": 18,
+              "module": "anthropic-claude:createAMessage",
+              "version": 1,
+              "parameters": {
+                "__IMTCONN__": 8771054
+              },
+              "mapper": {
+                "model": "claude-haiku-4-5-20251001",
+                "system": "{{2.extraction.step_2.system_prompt}}",
+                "messages": [
+                  {
+                    "role": "user",
+                    "content": [
+                      {
+                        "text": "{{replace(replace(replace(replace(replace(2.extraction.step_2.user_prompt_template; \"/\\{\\{control_description\\}\\}/g\"; 2.control.description); \"/\\{\\{tscs\\}\\}/g\"; 2.control.tscs); \"/\\{\\{expected_procedures\\}\\}/g\"; 2.control.expected_procedures); \"/\\{\\{evidence_name\\}\\}/g\"; 2.file.filename); \"/\\{\\{chunk_extractions\\}\\}/g\"; 52.text)}}",
+                        "type": "text"
+                      }
+                    ],
+                    "inputType": "multiple"
+                  }
+                ],
+                "metadata": {},
+                "thinking": {
+                  "type": "disabled"
+                },
+                "container": {},
+                "max_tokens": 30000,
+                "temperature": 0.8,
+                "tool_choice": {},
+                "outputFormat": {
+                  "type": "text"
+                }
+              },
+              "metadata": {
+                "designer": {
+                  "x": 731,
+                  "y": -670,
+                  "name": "SOC2 AI Auditor — PDF Chunk Aggregator "
+                },
+                "restore": {
+                  "expect": {
+                    "model": {
+                      "mode": "chose",
+                      "label": "Claude Haiku 4.5"
+                    },
+                    "tools": {
+                      "mode": "chose"
+                    },
+                    "messages": {
+                      "mode": "chose",
+                      "items": [
+                        {
+                          "role": {
+                            "mode": "chose",
+                            "label": "User"
+                          },
+                          "content": {
+                            "mode": "chose",
+                            "items": [
+                              {
+                                "type": {
+                                  "mode": "chose",
+                                  "label": "Text"
+                                }
+                              }
+                            ]
+                          },
+                          "inputType": {
+                            "mode": "chose",
+                            "label": "Multiple content blocks"
+                          }
+                        }
+                      ]
+                    },
+                    "thinking": {
+                      "nested": {
+                        "type": {
+                          "mode": "chose",
+                          "label": "Disabled"
+                        }
+                      }
+                    },
+                    "container": {
+                      "nested": {
+                        "skills": {
+                          "mode": "chose"
+                        }
+                      }
+                    },
+                    "mcp_servers": {
+                      "mode": "chose"
+                    },
+                    "tool_choice": {
+                      "nested": {
+                        "type": {
+                          "mode": "chose",
+                          "label": "Empty"
+                        }
+                      }
+                    },
+                    "outputFormat": {
+                      "nested": {
+                        "type": {
+                          "mode": "chose",
+                          "label": "Text"
+                        }
+                      }
+                    },
+                    "stop_sequences": {
+                      "mode": "chose"
+                    },
+                    "additionalParameters": {
+                      "mode": "chose"
+                    }
+                  },
+                  "parameters": {
+                    "__IMTCONN__": {
+                      "data": {
+                        "scoped": "true",
+                        "connection": "anthropic-claude"
+                      },
+                      "label": "My Anthropic Claude connection2026.05"
+                    }
+                  }
+                },
+                "advanced": true
+              }
+            },
+            {
+              "id": 20,
+              "module": "util:SetVariables",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "scope": "roundtrip",
+                "variables": [
+                  {
+                    "name": "inputtoken",
+                    "value": "{{18.usage.input_tokens}}"
+                  },
+                  {
+                    "name": "outputtoken",
+                    "value": "{{18.usage.output_tokens}}"
+                  }
+                ]
+              },
+              "metadata": {
+                "designer": {
+                  "x": 923,
+                  "y": -292
+                },
+                "restore": {
+                  "expect": {
+                    "scope": {
+                      "label": "One cycle"
+                    },
+                    "variables": {
+                      "items": [
+                        null,
+                        null
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 21,
+              "module": "code:ExecuteCode",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "input": [
+                  {
+                    "name": "rawInput",
+                    "value": "{{18.textResponse}}"
+                  },
+                  {
+                    "name": "jobId",
+                    "value": "{{2.job_id}}"
+                  },
+                  {
+                    "name": "providerExecutionId",
+                    "value": "{{var.scenario.executionId}}"
+                  },
+                  {
+                    "name": "providerExecutionUrl",
+                    "value": "{{var.scenario.executionUrl}}"
+                  }
+                ],
+                "language": "javascript",
+                "inputFormat": "editor",
+                "dependencies": [],
+                "codeEditorJavascript": "// Prompt 2 parser + Supabase callback body builder — fail-soft version\n//\n// Make Code module inputs:\n//   rawInput             = Claude Prompt 2 response (string or object)\n//   jobId                = original webhook job_id\n//   providerExecutionId  = Make execution ID (optional)\n//   providerExecutionUrl = Make execution URL (optional)\n//   inputTokens          = Prompt 2 input tokens (optional)\n//   outputTokens         = Prompt 2 output tokens (optional)\n//\n// Design rule: this module NEVER throws on a bad model response.\n// A thrown error kills the Make execution before the Supabase callback\n// fires, which strands the job in \"processing\" forever. Instead we always\n// build a callback body — with status \"completed\" on a clean parse, or\n// \"needs_review\" when the response was not usable JSON.\n\n// ---------------------------------------------------------------------\n// 1. Normalize the provider response down to plain text\n// ---------------------------------------------------------------------\n\nfunction extractText(value) {\n    if (value === null || value === undefined) return \"\";\n    if (typeof value === \"string\") return value;\n    if (typeof value !== \"object\") return String(value);\n\n    if (typeof value.text === \"string\") return value.text;\n    if (typeof value.content === \"string\") return value.content;\n\n    // Anthropic Messages API: content is an array of blocks. With extended\n    // thinking on, block 0 is a thinking block with no .text — so collect\n    // every text block instead of assuming index 0.\n    if (Array.isArray(value.content)) {\n        var parts = [];\n        for (var i = 0; i < value.content.length; i++) {\n            var block = value.content[i];\n            if (block && typeof block.text === \"string\") {\n                parts.push(block.text);\n            }\n        }\n        if (parts.length) return parts.join(\"\\n\");\n    }\n\n    if (\n        value.choices &&\n        value.choices[0] &&\n        value.choices[0].message &&\n        typeof value.choices[0].message.content === \"string\"\n    ) {\n        return value.choices[0].message.content;\n    }\n\n    return JSON.stringify(value);\n}\n\nvar rawText = String(extractText(input.rawInput) || \"\").trim();\n\n// ---------------------------------------------------------------------\n// 2. Pull out the scratchpad (optional, may appear before or after JSON)\n// ---------------------------------------------------------------------\n\nvar scratchpad = null;\nvar scratchpadMatch = rawText.match(/<scratchpad>([\\s\\S]*?)<\\/scratchpad>/i);\n\nif (scratchpadMatch) {\n    scratchpad = scratchpadMatch[1].trim();\n}\n\nvar body = rawText.replace(/<scratchpad>[\\s\\S]*?<\\/scratchpad>/gi, \"\").trim();\n\n// ---------------------------------------------------------------------\n// 3. Collect every plausible JSON candidate, best-first\n// ---------------------------------------------------------------------\n\n// Returns every balanced top-level slice bounded by openChar/closeChar,\n// skipping over anything inside a JSON string literal.\nfunction findBalanced(text, openChar, closeChar) {\n    var results = [];\n    var depth = 0;\n    var start = -1;\n    var inString = false;\n    var escaped = false;\n\n    for (var i = 0; i < text.length; i++) {\n        var c = text.charAt(i);\n\n        if (escaped) { escaped = false; continue; }\n        if (c === \"\\\\\" && inString) { escaped = true; continue; }\n        if (c === '\"') { inString = !inString; continue; }\n        if (inString) continue;\n\n        if (c === openChar) {\n            if (depth === 0) start = i;\n            depth++;\n        } else if (c === closeChar) {\n            if (depth > 0) {\n                depth--;\n                if (depth === 0 && start !== -1) {\n                    results.push(text.substring(start, i + 1));\n                    start = -1;\n                }\n            }\n        }\n    }\n\n    return results;\n}\n\nfunction collectCandidates(text) {\n    var candidates = [];\n    var seen = {};\n\n    function push(candidate) {\n        if (!candidate) return;\n        var trimmed = candidate.trim();\n        if (!trimmed || seen[trimmed]) return;\n        seen[trimmed] = true;\n        candidates.push(trimmed);\n    }\n\n    // a) Contents of every fenced code block (```json ... ``` or ``` ... ```)\n    var fenceRe = /```[ \\t]*([a-zA-Z0-9_-]*)[ \\t]*\\r?\\n([\\s\\S]*?)```/g;\n    var fence;\n    while ((fence = fenceRe.exec(text)) !== null) {\n        push(fence[2]);\n    }\n\n    // b) Balanced object / array slices anywhere in the text\n    var stripped = text.replace(/```[\\s\\S]*?```/g, \" \");\n    var objects = findBalanced(stripped, \"{\", \"}\");\n    var arrays = findBalanced(stripped, \"[\", \"]\");\n    for (var i = 0; i < objects.length; i++) push(objects[i]);\n    for (var j = 0; j < arrays.length; j++) push(arrays[j]);\n\n    // c) The whole body, in case it is already bare JSON\n    push(text);\n\n    return candidates;\n}\n\n// ---------------------------------------------------------------------\n// 4. Parse, with repairs applied only as escalating fallbacks\n// ---------------------------------------------------------------------\n\nfunction tryParse(candidate) {\n    try {\n        return { ok: true, value: JSON.parse(candidate) };\n    } catch (error) {\n        return { ok: false, error: String(error && error.message) };\n    }\n}\n\n// Removes trailing commas before } or ]. Safe: the pattern cannot occur\n// inside a well-formed string that we would otherwise want to keep.\nfunction repairTrailingCommas(text) {\n    return text.replace(/,(\\s*[}\\]])/g, \"$1\");\n}\n\n// Aggressive: rewrites curly quotes to straight ones. This CAN corrupt\n// legitimate quoted prose inside string values, so it runs only after\n// every gentler attempt has failed.\nfunction repairSmartQuotes(text) {\n    return text\n        .replace(/[“”]/g, '\"')\n        .replace(/[‘’]/g, \"'\");\n}\n\nfunction parseFirstUsable(text) {\n    var candidates = collectCandidates(text);\n    var lastError = null;\n\n    var repairs = [\n        function (t) { return t; },\n        repairTrailingCommas,\n        function (t) { return repairSmartQuotes(repairTrailingCommas(t)); }\n    ];\n\n    for (var r = 0; r < repairs.length; r++) {\n        for (var c = 0; c < candidates.length; c++) {\n            var attempt = tryParse(repairs[r](candidates[c]));\n\n            if (attempt.ok) {\n                var v = attempt.value;\n                // Accept objects and arrays; reject bare scalars, which are\n                // almost always a fragment we matched by accident.\n                if (v !== null && typeof v === \"object\") {\n                    return {\n                        ok: true,\n                        value: v,\n                        repairLevel: r,\n                        candidateIndex: c\n                    };\n                }\n            } else {\n                lastError = attempt.error;\n            }\n        }\n    }\n\n    return { ok: false, error: lastError };\n}\n\nvar parsed = parseFirstUsable(body);\n\n// ---------------------------------------------------------------------\n// 5. Build the callback payload — always, parsed or not\n// ---------------------------------------------------------------------\n\nfunction safeInteger(value) {\n    var number = Number(value || 0);\n    return isFinite(number) && number >= 0 ? Math.floor(number) : 0;\n}\n\nvar jobId = String(input.jobId || \"\").trim();\n\nvar callbackPayload = {\n    job_id: jobId,\n    status: parsed.ok ? \"completed\" : \"needs_review\",\n    provider_execution_id: String(input.providerExecutionId || \"\").trim(),\n    provider_execution_url: String(input.providerExecutionUrl || \"\").trim(),\n    extracted_content: parsed.ok ? parsed.value : null,\n    raw_extracted_text: rawText,\n    scratchpad: scratchpad,\n    input_tokens: safeInteger(input.inputTokens),\n    output_tokens: safeInteger(input.outputTokens)\n};\n\n// Diagnostics only present when something needed attention.\nvar warnings = [];\n\nif (!rawText) {\n    warnings.push(\"Claude Prompt 2 returned no text\");\n}\n\nif (!jobId) {\n    warnings.push(\"Missing original webhook jobId\");\n}\n\nif (!parsed.ok && rawText) {\n    warnings.push(\n        \"No parseable JSON object in the response\" +\n        (parsed.error ? \" (\" + parsed.error + \")\" : \"\")\n    );\n}\n\nif (parsed.ok && parsed.repairLevel > 0) {\n    warnings.push(\n        \"JSON parsed only after repair level \" + parsed.repairLevel +\n        \" — the model's raw output was malformed\"\n    );\n}\n\nif (warnings.length) {\n    callbackPayload.parse_warnings = warnings;\n}\n\nreturn {\n    callbackBody: JSON.stringify(callbackPayload),\n    json: parsed.ok ? JSON.stringify(parsed.value) : null,\n    scratchpad: scratchpad,\n    parseOk: parsed.ok,\n    // Route on this in Make: 0 = clean, 1+ = send to a review branch.\n    warningCount: warnings.length\n};"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1224,
+                  "y": -290
+                },
+                "restore": {
+                  "expect": {
+                    "input": {
+                      "items": [
+                        null,
+                        null,
+                        null,
+                        null
+                      ]
+                    },
+                    "language": {
+                      "mode": "chose",
+                      "label": "JavaScript"
+                    },
+                    "inputFormat": {
+                      "label": "Code editor"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 37,
+              "module": "http:ActionSendDataAPIKeyAuth",
+              "version": 3,
+              "parameters": {
+                "auth": 82693,
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "{{2.callback.url}}",
+                "data": "{{21.result.callbackBody}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [
+                  {
+                    "name": "x-make-secret",
+                    "value": "dc9b258619bd13e4d52b8b4041d56554fc325888dc479dad81d2469b35b8b5a9"
+                  },
+                  {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "timeout": "",
+                "useMtls": false,
+                "bodyType": "raw",
+                "contentType": "application/json",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": false,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1735,
+                  "y": -344,
+                  "name": "call back supabase"
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose",
+                      "items": [
+                        null,
+                        null
+                      ]
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "JSON (application/json)"
+                    }
+                  },
+                  "parameters": {
+                    "auth": {
+                      "label": "My API Key Auth key"
+                    }
+                  }
+                }
+              },
+              "onerror": [
+                {
+                  "id": 39,
+                  "module": "http:ActionSendDataAPIKeyAuth",
+                  "version": 3,
+                  "parameters": {
+                    "auth": 82693,
+                    "handleErrors": false,
+                    "useNewZLibDeCompress": true
+                  },
+                  "mapper": {
+                    "ca": "",
+                    "qs": [],
+                    "url": "{{2.callback.url}}",
+                    "data": "{\n  \"job_id\": \"{{2.job_id}}\",\n  \"status\": \"failed\",\n  \"provider_execution_id\": \"{{var.scenario.executionId}}\",\n  \"provider_execution_url\": \"{{var.scenario.executionUrl}}\",\n  \"error\": \"{{escapeJSON(37.error.message)}}\"\n}",
+                    "gzip": true,
+                    "method": "post",
+                    "headers": [
+                      {
+                        "name": "x-make-secret",
+                        "value": "dc9b258619bd13e4d52b8b4041d56554fc325888dc479dad81d2469b35b8b5a9"
+                      },
+                      {
+                        "name": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "timeout": "",
+                    "useMtls": false,
+                    "bodyType": "raw",
+                    "contentType": "application/json",
+                    "serializeUrl": false,
+                    "shareCookies": false,
+                    "parseResponse": false,
+                    "followRedirect": true,
+                    "useQuerystring": false,
+                    "followAllRedirects": false,
+                    "rejectUnauthorized": true
+                  },
+                  "metadata": {
+                    "designer": {
+                      "x": 1780,
+                      "y": -1,
+                      "name": "call back supabase"
+                    },
+                    "restore": {
+                      "expect": {
+                        "qs": {
+                          "mode": "chose"
+                        },
+                        "method": {
+                          "mode": "chose",
+                          "label": "POST"
+                        },
+                        "headers": {
+                          "mode": "chose",
+                          "items": [
+                            null,
+                            null
+                          ]
+                        },
+                        "bodyType": {
+                          "label": "Raw"
+                        },
+                        "contentType": {
+                          "label": "JSON (application/json)"
+                        }
+                      },
+                      "parameters": {
+                        "auth": {
+                          "label": "My API Key Auth key"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 54,
+              "module": "http:ActionGetFile",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false
+              },
+              "filter": {
+                "name": "from Attchment",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.file.download_url}}",
+                      "o": "exist"
+                    }
+                  ]
+                ]
+              },
+              "mapper": {
+                "url": "{{2.file.download_url}}",
+                "method": "get",
+                "serializeUrl": false,
+                "shareCookies": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": -1376,
+                  "y": 84
+                },
+                "restore": {}
+              }
+            },
+            {
+              "id": 60,
+              "module": "pdf-co:PDFToAnything",
+              "version": 1,
+              "parameters": {
+                "__IMTCONN__": 7007554
+              },
+              "mapper": {
+                "async": 15000,
+                "export": {
+                  "exportType": "inline"
+                },
+                "import": {
+                  "data": "{{54.data}}",
+                  "name": "{{54.fileName}}",
+                  "importType": "upload"
+                },
+                "inline": false,
+                "convert": {
+                  "convertType": "toText"
+                },
+                "expiration": 60
+              },
+              "metadata": {
+                "designer": {
+                  "x": -1102,
+                  "y": 554
+                },
+                "restore": {
+                  "expect": {
+                    "async": {
+                      "mode": "chose",
+                      "label": "Async"
+                    },
+                    "export": {
+                      "nested": {
+                        "exportType": {
+                          "label": "JSON Output"
+                        }
+                      }
+                    },
+                    "import": {
+                      "nested": {
+                        "importType": {
+                          "label": "Upload a File"
+                        }
+                      }
+                    },
+                    "inline": {
+                      "mode": "chose"
+                    },
+                    "convert": {
+                      "nested": {
+                        "convertType": {
+                          "label": "PDF to Text"
+                        }
+                      }
+                    }
+                  },
+                  "parameters": {
+                    "__IMTCONN__": {
+                      "data": {
+                        "scoped": "true",
+                        "connection": "pdf-co"
+                      },
+                      "label": "Decrypt_ISO27001"
+                    }
+                  }
+                },
+                "advanced": true
+              }
+            },
+            {
+              "id": 73,
+              "module": "http:ActionGetFile",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false
+              },
+              "mapper": {
+                "url": "{{60.url}}",
+                "method": "get",
+                "serializeUrl": false,
+                "shareCookies": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": -952,
+                  "y": 554,
+                  "name": "Download extracted text"
+                },
+                "restore": {}
+              }
+            },
+            {
+              "id": 61,
+              "module": "code:ExecuteCode",
+              "version": 0,
+              "parameters": {},
+              "mapper": {
+                "input": [
+                  {
+                    "name": "pdfBody",
+                    "value": "{{toString(73.data)}}"
+                  }
+                ],
+                "language": "javascript",
+                "inputFormat": "editor",
+                "dependencies": [],
+                "codeEditorJavascript": "// ============================================\n// Enhanced PDF Text Chunker - Handles Large Single Sections\n// ============================================\n\n// Configuration (Using your larger limits)\nconst MAX_TOKENS_PER_CHUNK = 150000;\nconst CHARS_PER_TOKEN = 4;\nconst MAX_CHARS = MAX_TOKENS_PER_CHUNK * CHARS_PER_TOKEN; // 600,000\nconst HARD_SPLIT_OVERLAP = 1000; // Overlap when a single section is too large\n\nlet pdfText = \"\";\n\n// Handle input (assuming environment like Zapier/Make)\nif (typeof input !== 'undefined' && input.pdfBody) {\n    if (typeof input.pdfBody === 'string') {\n        pdfText = input.pdfBody;\n    } else if (typeof input.pdfBody === 'object') {\n        pdfText = JSON.stringify(input.pdfBody);\n    } else {\n        pdfText = String(input.pdfBody);\n    }\n}\n\nif (!pdfText || pdfText.length === 0) {\n    throw new Error(\"No text from PDF.co\");\n}\n\nconsole.log(`✓ Input: ${pdfText.length} chars`);\n\n// Strategy 1: Try to split by PR entries (Timestamp field)\n// Lookahead keeps the delimiter attached to the resulting chunks\nlet entries = pdfText.split(/(?=\"Timestamp\":|\"Pull Request Number\":)/);\nlet sections = entries.length > 5 ? entries : [];\n\nif (sections.length > 0) {\n    console.log(`✓ Strategy 1: Found ${sections.length} PR entries`);\n}\n\n// Strategy 2: If no PR splits, try evidence sections\nif (sections.length === 0) {\n    const sectionPattern = /Evidence - Source Control[\\s\\S]*?(?=Evidence - Source Control|$)/gi;\n    const matches = pdfText.match(sectionPattern);\n    \n    if (matches && matches.length > 1) {\n        sections = matches;\n        console.log(`✓ Strategy 2: Using ${sections.length} evidence sections`);\n    }\n}\n\n// Strategy 3: Split by paragraphs\nif (sections.length === 0) {\n    console.log(`⚠ Strategy 3: Using paragraph splits`);\n    sections = pdfText.split(/\\n\\n+/).filter(s => s.trim().length > 0);\n}\n\n// Build chunks respecting MAX_CHARS limit\nconst chunks = [];\nlet currentChunk = \"\";\n\nfor (let i = 0; i < sections.length; i++) {\n    const section = sections[i];\n    const separator = currentChunk.length > 0 ? \"\\n\\n\" : \"\";\n    \n    // If a single section exceeds MAX_CHARS, split it forcefully with a small overlap\n    if (section.length > MAX_CHARS) {\n        console.log(`⚠ Section ${i+1} too large (${section.length} chars), forcing split...`);\n        \n        // Save current chunk if it has content\n        if (currentChunk.length > 0) {\n            chunks.push({\n                text: currentChunk,\n                chunkNumber: chunks.length + 1,\n                charCount: currentChunk.length,\n                estimatedTokens: Math.floor(currentChunk.length / CHARS_PER_TOKEN)\n            });\n            currentChunk = \"\";\n        }\n        \n        // Split the massive section into sub-chunks with overlap\n        for (let start = 0; start < section.length; start += (MAX_CHARS - HARD_SPLIT_OVERLAP)) {\n            const subChunk = section.substring(start, Math.min(start + MAX_CHARS, section.length));\n            chunks.push({\n                text: subChunk,\n                chunkNumber: chunks.length + 1,\n                charCount: subChunk.length,\n                estimatedTokens: Math.floor(subChunk.length / CHARS_PER_TOKEN)\n            });\n            console.log(`  Created sub-chunk ${chunks.length}: ${subChunk.length} chars`);\n        }\n        continue; // Move to the next section\n    }\n    \n    // Check if adding this section exceeds limit\n    if ((currentChunk.length + separator.length + section.length) > MAX_CHARS && currentChunk.length > 0) {\n        // Limit reached: Save current chunk\n        chunks.push({\n            text: currentChunk,\n            chunkNumber: chunks.length + 1,\n            charCount: currentChunk.length,\n            estimatedTokens: Math.floor(currentChunk.length / CHARS_PER_TOKEN)\n        });\n        \n        console.log(`✓ Chunk ${chunks.length}: ${currentChunk.length} chars`);\n        \n        // Start a new chunk with the current section\n        currentChunk = section;\n    } else {\n        // Safe to add to current chunk\n        currentChunk += separator + section;\n    }\n}\n\n// Add the final chunk if anything is left over\nif (currentChunk.length > 0) {\n    chunks.push({\n        text: currentChunk,\n        chunkNumber: chunks.length + 1,\n        charCount: currentChunk.length,\n        estimatedTokens: Math.floor(currentChunk.length / CHARS_PER_TOKEN)\n    });\n    console.log(`✓ Final chunk ${chunks.length}: ${currentChunk.length} chars`);\n}\n\n// Add metadata output\nconst output = chunks.map(chunk => ({\n    text: chunk.text,\n    chunkNumber: chunk.chunkNumber,\n    totalChunks: chunks.length,\n    charCount: chunk.charCount,\n    estimatedTokens: chunk.estimatedTokens,\n    percentageOfTotal: Math.round((chunk.charCount / pdfText.length) * 100),\n    preview: chunk.text.substring(0, 150) + \"...\"\n}));\n\nconsole.log(`\\n=== SUMMARY ===`);\nconsole.log(`✓ Created ${output.length} chunks`);\nconsole.log(`✓ Input: ${pdfText.length} chars (~${Math.floor(pdfText.length / CHARS_PER_TOKEN)} tokens)`);\nconsole.log(`✓ Largest chunk: ${Math.max(...output.map(c => c.estimatedTokens))} tokens`);\nconsole.log(`✓ All chunks under limit: ${Math.max(...output.map(c => c.charCount)) <= MAX_CHARS ? 'YES ✓' : 'NO ✗'}`);\n\nreturn output;"
+              },
+              "metadata": {
+                "designer": {
+                  "x": -754,
+                  "y": 523
+                },
+                "restore": {
+                  "expect": {
+                    "input": {
+                      "items": [
+                        null
+                      ]
+                    },
+                    "language": {
+                      "mode": "chose",
+                      "label": "JavaScript"
+                    },
+                    "inputFormat": {
+                      "label": "Code editor"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 62,
+              "module": "builtin:BasicFeeder",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "array": "{{61.result}}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": -424,
+                  "y": 544
+                },
+                "restore": {
+                  "expect": {
+                    "array": {
+                      "mode": "edit"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 63,
+              "module": "anthropic-claude:createAMessage",
+              "version": 1,
+              "parameters": {
+                "__IMTCONN__": 8771054
+              },
+              "mapper": {
+                "model": "claude-haiku-4-5-20251001",
+                "system": "{{2.extraction.step_1.system_prompt}}",
+                "messages": [
+                  {
+                    "role": "user",
+                    "content": [
+                      {
+                        "text": "{{replace(replace(replace(replace(replace(replace(2.extraction.step_1.user_prompt_template; \"/\\{\\{control_description\\}\\}/g\"; 2.control.description); \"/\\{\\{tscs\\}\\}/g\"; 2.control.tscs); \"/\\{\\{expected_procedures\\}\\}/g\"; 2.control.expected_procedures); \"/\\{\\{evidence_text\\}\\}/g\"; 62.text); \"/\\{\\{chunk_number\\}\\}/g\"; 62.chunkNumber); \"/\\{\\{total_chunks\\}\\}/g\"; 62.totalChunks)}}",
+                        "type": "text"
+                      }
+                    ],
+                    "inputType": "multiple"
+                  }
+                ],
+                "metadata": {},
+                "thinking": {
+                  "type": "disabled"
+                },
+                "container": {},
+                "max_tokens": 10000,
+                "temperature": 1,
+                "tool_choice": {},
+                "outputFormat": {
+                  "type": "text"
+                }
+              },
+              "metadata": {
+                "designer": {
+                  "x": -171,
+                  "y": 784,
+                  "name": "Step 1: Signal-Based Screene"
+                },
+                "restore": {
+                  "expect": {
+                    "model": {
+                      "mode": "chose",
+                      "label": "Claude Haiku 4.5"
+                    },
+                    "tools": {
+                      "mode": "chose"
+                    },
+                    "messages": {
+                      "mode": "chose",
+                      "items": [
+                        {
+                          "role": {
+                            "mode": "chose",
+                            "label": "User"
+                          },
+                          "content": {
+                            "mode": "chose",
+                            "items": [
+                              {
+                                "type": {
+                                  "mode": "chose",
+                                  "label": "Text"
+                                }
+                              }
+                            ]
+                          },
+                          "inputType": {
+                            "mode": "chose",
+                            "label": "Multiple content blocks"
+                          }
+                        }
+                      ]
+                    },
+                    "thinking": {
+                      "nested": {
+                        "type": {
+                          "mode": "chose",
+                          "label": "Disabled"
+                        }
+                      }
+                    },
+                    "container": {
+                      "nested": {
+                        "skills": {
+                          "mode": "chose"
+                        }
+                      }
+                    },
+                    "mcp_servers": {
+                      "mode": "chose"
+                    },
+                    "tool_choice": {
+                      "nested": {
+                        "type": {
+                          "mode": "chose",
+                          "label": "Empty"
+                        }
+                      }
+                    },
+                    "outputFormat": {
+                      "nested": {
+                        "type": {
+                          "mode": "chose",
+                          "label": "Text"
+                        }
+                      }
+                    },
+                    "stop_sequences": {
+                      "mode": "chose"
+                    },
+                    "additionalParameters": {
+                      "mode": "chose"
+                    }
+                  },
+                  "parameters": {
+                    "__IMTCONN__": {
+                      "data": {
+                        "scoped": "true",
+                        "connection": "anthropic-claude"
+                      },
+                      "label": "My Anthropic Claude connection2026.05"
+                    }
+                  }
+                },
+                "advanced": true
+              }
+            },
+            {
+              "id": 64,
+              "module": "builtin:BasicAggregator",
+              "version": 1,
+              "parameters": {
+                "feeder": 62
+              },
+              "mapper": {
+                "id": "{{63.id}}",
+                "role": "{{63.role}}",
+                "type": "{{63.type}}",
+                "files": "{{63.files}}",
+                "model": "{{63.model}}",
+                "tools": "{{63.tools}}",
+                "usage": "{{63.usage}}",
+                "value": "{{62.value}}",
+                "content": "{{63.content}}",
+                "container": "{{63.container}}",
+                "stop_reason": "{{63.stop_reason}}",
+                "__IMTINDEX__": "{{62.`__IMTINDEX__`}}",
+                "stop_details": "{{63.stop_details}}",
+                "textResponse": "{{63.textResponse}}",
+                "__IMTLENGTH__": "{{62.`__IMTLENGTH__`}}",
+                "stop_sequence": "{{63.stop_sequence}}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": -5,
+                  "y": 489
+                },
+                "restore": {
+                  "extra": {
+                    "feeder": {
+                      "label": "Iterator"
+                    },
+                    "target": {
+                      "label": "Custom"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 65,
+              "module": "util:TextAggregator",
+              "version": 1,
+              "parameters": {
+                "feeder": 64,
+                "rowSeparator": "\n"
+              },
+              "mapper": {
+                "value": "{{64.array[].textResponse}}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 295,
+                  "y": 489
+                },
+                "restore": {
+                  "extra": {
+                    "feeder": {
+                      "label": "Array aggregator"
+                    }
+                  },
+                  "parameters": {
+                    "rowSeparator": {
+                      "label": "New row"
+                    }
+                  }
+                },
+                "advanced": true
+              }
+            },
+            {
+              "id": 66,
+              "module": "anthropic-claude:createAMessage",
+              "version": 1,
+              "parameters": {
+                "__IMTCONN__": 8771054
+              },
+              "mapper": {
+                "model": "claude-haiku-4-5-20251001",
+                "system": "{{2.extraction.step_2.system_prompt}}",
+                "messages": [
+                  {
+                    "role": "user",
+                    "content": [
+                      {
+                        "text": "{{replace(replace(replace(replace(replace(2.extraction.step_2.user_prompt_template; \"/\\{\\{control_description\\}\\}/g\"; 2.control.description); \"/\\{\\{tscs\\}\\}/g\"; 2.control.tscs); \"/\\{\\{expected_procedures\\}\\}/g\"; 2.control.expected_procedures); \"/\\{\\{evidence_name\\}\\}/g\"; 2.file.filename); \"/\\{\\{chunk_extractions\\}\\}/g\"; 65.text)}}",
+                        "type": "text"
+                      }
+                    ],
+                    "inputType": "multiple"
+                  }
+                ],
+                "metadata": {},
+                "thinking": {
+                  "type": "disabled"
+                },
+                "container": {},
+                "max_tokens": 30000,
+                "temperature": 0.8,
+                "tool_choice": {},
+                "outputFormat": {
+                  "type": "text"
+                }
+              },
+              "metadata": {
+                "designer": {
+                  "x": 576,
+                  "y": 456,
+                  "name": "SOC2 AI Auditor — PDF Chunk Aggregator "
+                },
+                "restore": {
+                  "expect": {
+                    "model": {
+                      "mode": "chose",
+                      "label": "Claude Haiku 4.5"
+                    },
+                    "tools": {
+                      "mode": "chose"
+                    },
+                    "messages": {
+                      "mode": "chose",
+                      "items": [
+                        {
+                          "role": {
+                            "mode": "chose",
+                            "label": "User"
+                          },
+                          "content": {
+                            "mode": "chose",
+                            "items": [
+                              {
+                                "type": {
+                                  "mode": "chose",
+                                  "label": "Text"
+                                }
+                              }
+                            ]
+                          },
+                          "inputType": {
+                            "mode": "chose",
+                            "label": "Multiple content blocks"
+                          }
+                        }
+                      ]
+                    },
+                    "thinking": {
+                      "nested": {
+                        "type": {
+                          "mode": "chose",
+                          "label": "Disabled"
+                        }
+                      }
+                    },
+                    "container": {
+                      "nested": {
+                        "skills": {
+                          "mode": "chose"
+                        }
+                      }
+                    },
+                    "mcp_servers": {
+                      "mode": "chose"
+                    },
+                    "tool_choice": {
+                      "nested": {
+                        "type": {
+                          "mode": "chose",
+                          "label": "Empty"
+                        }
+                      }
+                    },
+                    "outputFormat": {
+                      "nested": {
+                        "type": {
+                          "mode": "chose",
+                          "label": "Text"
+                        }
+                      }
+                    },
+                    "stop_sequences": {
+                      "mode": "chose"
+                    },
+                    "additionalParameters": {
+                      "mode": "chose"
+                    }
+                  },
+                  "parameters": {
+                    "__IMTCONN__": {
+                      "data": {
+                        "scoped": "true",
+                        "connection": "anthropic-claude"
+                      },
+                      "label": "My Anthropic Claude connection2026.05"
+                    }
+                  }
+                },
+                "advanced": true
+              }
+            },
+            {
+              "id": 67,
+              "module": "util:SetVariables",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "scope": "roundtrip",
+                "variables": [
+                  {
+                    "name": "inputtoken",
+                    "value": "{{66.usage.input_tokens}}"
+                  },
+                  {
+                    "name": "outputtoken",
+                    "value": "{{66.usage.output_tokens}}"
+                  }
+                ]
+              },
+              "metadata": {
+                "designer": {
+                  "x": 789,
+                  "y": 863
+                },
+                "restore": {
+                  "expect": {
+                    "scope": {
+                      "label": "One cycle"
+                    },
+                    "variables": {
+                      "items": [
+                        null,
+                        null
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 68,
+              "module": "code:ExecuteCode",
+              "version": 1,
+              "parameters": {},
+              "mapper": {
+                "input": [
+                  {
+                    "name": "rawInput",
+                    "value": "{{66.textResponse}}"
+                  },
+                  {
+                    "name": "jobId",
+                    "value": "{{2.job_id}}"
+                  },
+                  {
+                    "name": "providerExecutionId",
+                    "value": "{{var.scenario.executionId}}"
+                  },
+                  {
+                    "name": "providerExecutionUrl",
+                    "value": "{{var.scenario.executionUrl}}"
+                  }
+                ],
+                "language": "javascript",
+                "inputFormat": "editor",
+                "dependencies": [],
+                "codeEditorJavascript": "// Prompt 2 parser + Supabase callback body builder\n//\n// Configure these Make Code inputs:\n// rawInput            = Claude Prompt 2 text response\n// jobId               = original webhook job_id\n// providerExecutionId = Make execution ID (optional)\n// inputTokens         = Prompt 2 input tokens (optional)\n// outputTokens        = Prompt 2 output tokens (optional)\n\nvar value = input.rawInput;\n\n// Unwrap common AI response formats.\nif (typeof value === \"object\" && value !== null) {\n    if (typeof value.text === \"string\") {\n        value = value.text;\n    } else if (typeof value.content === \"string\") {\n        value = value.content;\n    } else if (\n        Array.isArray(value.content) &&\n        value.content[0] &&\n        typeof value.content[0].text === \"string\"\n    ) {\n        value = value.content[0].text;\n    } else if (\n        value.choices &&\n        value.choices[0] &&\n        value.choices[0].message &&\n        typeof value.choices[0].message.content === \"string\"\n    ) {\n        value = value.choices[0].message.content;\n    } else {\n        value = JSON.stringify(value);\n    }\n}\n\nvar rawText = String(value || \"\").trim();\n\nif (!rawText) {\n    throw new Error(\"Claude Prompt 2 returned no text\");\n}\n\n// Extract the scratchpad.\nvar scratchpad = null;\nvar scratchpadMatch = rawText.match(\n    /<scratchpad>([\\s\\S]*?)<\\/scratchpad>/i\n);\n\nif (scratchpadMatch) {\n    scratchpad = scratchpadMatch[1].trim();\n}\n\n// Remove the scratchpad from the JSON candidate.\nvar text = rawText\n    .replace(/<scratchpad>[\\s\\S]*?<\\/scratchpad>/i, \"\")\n    .trim();\n\n// Remove Markdown code fences.\nvar fenceMatch = text.match(/```(?:json)?\\s*([\\s\\S]*?)```/i);\n\nif (fenceMatch) {\n    text = fenceMatch[1].trim();\n}\n\n// Find the first complete JSON object using brace-depth matching.\nvar start = text.indexOf(\"{\");\n\nif (start === -1) {\n    throw new Error(\n        \"Prompt 2 response did not contain a JSON object. Preview: \" +\n        text.slice(0, 300)\n    );\n}\n\nvar depth = 0;\nvar inString = false;\nvar escaped = false;\nvar jsonText = \"\";\n\nfor (var i = start; i < text.length; i++) {\n    var character = text.charAt(i);\n\n    if (escaped) {\n        escaped = false;\n        continue;\n    }\n\n    if (character === \"\\\\\" && inString) {\n        escaped = true;\n        continue;\n    }\n\n    if (character === '\"') {\n        inString = !inString;\n        continue;\n    }\n\n    if (inString) continue;\n\n    if (character === \"{\") {\n        depth++;\n    } else if (character === \"}\") {\n        depth--;\n\n        if (depth === 0) {\n            jsonText = text.substring(start, i + 1);\n            break;\n        }\n    }\n}\n\nif (!jsonText) {\n    throw new Error(\"Prompt 2 returned an incomplete JSON object\");\n}\n\n// Repair a few common model-output problems.\njsonText = jsonText\n    .replace(/,(\\s*[}\\]])/g, \"$1\")\n    .replace(/[\\u201C\\u201D]/g, '\"')\n    .replace(/[\\u2018\\u2019]/g, \"'\");\n\nvar extractedContent;\n\ntry {\n    extractedContent = JSON.parse(jsonText);\n} catch (error) {\n    throw new Error(\n        \"Prompt 2 returned invalid JSON: \" +\n        error.message +\n        \". Preview: \" +\n        jsonText.slice(0, 300)\n    );\n}\n\nif (\n    !extractedContent ||\n    typeof extractedContent !== \"object\" ||\n    Array.isArray(extractedContent)\n) {\n    throw new Error(\"Prompt 2 JSON must be an object\");\n}\n\nvar jobId = String(input.jobId || \"\").trim();\n\nif (!jobId) {\n    throw new Error(\"Missing original webhook jobId\");\n}\n\nfunction safeInteger(value) {\n    var number = Number(value || 0);\n\n    return Number.isSafeInteger(number) && number >= 0\n        ? number\n        : 0;\n}\n\nvar callbackPayload = {\n    job_id: jobId,\n    status: \"completed\",\n    provider_execution_id: String(\n        input.providerExecutionId || \"\"\n    ).trim(),\n    provider_execution_url: String(\n        input.providerExecutionUrl || \"\"\n    ).trim(),\n    extracted_content: extractedContent,\n    raw_extracted_text: rawText,\n    scratchpad: scratchpad,\n    input_tokens: safeInteger(input.inputTokens),\n    output_tokens: safeInteger(input.outputTokens)\n};\n\nreturn {\n    callbackBody: JSON.stringify(callbackPayload),\n    json: JSON.stringify(extractedContent),\n    scratchpad: scratchpad\n};"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1090,
+                  "y": 865
+                },
+                "restore": {
+                  "expect": {
+                    "input": {
+                      "items": [
+                        null,
+                        null,
+                        null,
+                        null
+                      ]
+                    },
+                    "language": {
+                      "mode": "chose",
+                      "label": "JavaScript"
+                    },
+                    "inputFormat": {
+                      "label": "Code editor"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 69,
+              "module": "http:ActionSendDataAPIKeyAuth",
+              "version": 3,
+              "parameters": {
+                "auth": 82693,
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "{{2.callback.url}}",
+                "data": "{{68.result.callbackBody}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [
+                  {
+                    "name": "x-make-secret",
+                    "value": "dc9b258619bd13e4d52b8b4041d56554fc325888dc479dad81d2469b35b8b5a9"
+                  },
+                  {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "timeout": "",
+                "useMtls": false,
+                "bodyType": "raw",
+                "contentType": "application/json",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": false,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1601,
+                  "y": 811,
+                  "name": "call back supabase"
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose",
+                      "items": [
+                        null,
+                        null
+                      ]
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "JSON (application/json)"
+                    }
+                  },
+                  "parameters": {
+                    "auth": {
+                      "label": "My API Key Auth key"
+                    }
+                  }
+                }
+              },
+              "onerror": [
+                {
+                  "id": 70,
+                  "module": "http:ActionSendDataAPIKeyAuth",
+                  "version": 3,
+                  "parameters": {
+                    "auth": 82693,
+                    "handleErrors": false,
+                    "useNewZLibDeCompress": true
+                  },
+                  "mapper": {
+                    "ca": "",
+                    "qs": [],
+                    "url": "{{2.callback.url}}",
+                    "data": "{\n  \"job_id\": \"{{2.job_id}}\",\n  \"status\": \"failed\",\n  \"provider_execution_id\": \"{{var.scenario.executionId}}\",\n  \"provider_execution_url\": \"{{var.scenario.executionUrl}}\",\n  \"error\": \"{{escapeJSON(69.error.message)}}\"\n}",
+                    "gzip": true,
+                    "method": "post",
+                    "headers": [
+                      {
+                        "name": "x-make-secret",
+                        "value": "dc9b258619bd13e4d52b8b4041d56554fc325888dc479dad81d2469b35b8b5a9"
+                      },
+                      {
+                        "name": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "timeout": "",
+                    "useMtls": false,
+                    "bodyType": "raw",
+                    "contentType": "application/json",
+                    "serializeUrl": false,
+                    "shareCookies": false,
+                    "parseResponse": false,
+                    "followRedirect": true,
+                    "useQuerystring": false,
+                    "followAllRedirects": false,
+                    "rejectUnauthorized": true
+                  },
+                  "metadata": {
+                    "designer": {
+                      "x": 1646,
+                      "y": 1154,
+                      "name": "call back supabase"
+                    },
+                    "restore": {
+                      "expect": {
+                        "qs": {
+                          "mode": "chose"
+                        },
+                        "method": {
+                          "mode": "chose",
+                          "label": "POST"
+                        },
+                        "headers": {
+                          "mode": "chose",
+                          "items": [
+                            null,
+                            null
+                          ]
+                        },
+                        "bodyType": {
+                          "label": "Raw"
+                        },
+                        "contentType": {
+                          "label": "JSON (application/json)"
+                        }
+                      },
+                      "parameters": {
+                        "auth": {
+                          "label": "My API Key Auth key"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "slots": null,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": {
+      "orphans": []
+    },
+    "zone": "us2.make.com",
+    "notes": []
+  }
+}
