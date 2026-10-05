@@ -29,34 +29,41 @@ def http_send(mid, name, body, x, y):
                                                 "headers": {"mode": "chose", "items": [None]},
                                                 "bodyType": {"label": "Raw"}, "contentType": {"label": "JSON (application/json)"}}}}}
 
-def handoff_body(url_expr):
+def tj(mid, name, expr, x, y, filt=None):
+    m = {"id": mid, "module": "json:TransformToJSON", "version": 1, "parameters": {"space": ""},
+         "mapper": {"object": expr},
+         "metadata": {"designer": {"x": x, "y": y, "name": name}, "restore": {"parameters": {"space": {"label": "Empty"}}}}}
+    if filt: m["filter"] = filt
+    return m
+
+def handoff_body(url_expr, f, c, e):
     return ("{\n"
-            '  "contract_version": {{toJSON(2.contract_version)}},\n'
-            '  "job_id": {{toJSON(2.job_id)}},\n'
-            '  "sync_run_id": {{toJSON(2.sync_run_id)}},\n'
-            '  "file": {{toJSON(2.file)}},\n'
-            '  "control": {{toJSON(2.control)}},\n'
-            '  "extraction": {{toJSON(2.extraction)}},\n'
-            '  "callback": {{toJSON(2.callback)}},\n'
+            '  "contract_version": {{ifempty(2.contract_version; "null")}},\n'
+            '  "job_id": "{{2.job_id}}",\n'
+            '  "sync_run_id": "{{2.sync_run_id}}",\n'
+            f'  "file": {{{{{f}.json}}}},\n'
+            f'  "control": {{{{{c}.json}}}},\n'
+            f'  "extraction": {{{{{e}.json}}}},\n'
+            '  "callback": {"url": "{{2.callback.url}}", "method": "{{2.callback.method}}", "secret_header": "{{2.callback.secret_header}}"},\n'
             '  "continuation": {\n'
-            f'    "text_url": {{{{toJSON({url_expr})}}}},\n'
+            f'    "text_url": "{{{{{url_expr}}}}}",\n'
             '    "next_chunk": 1,\n'
-            '    "merged_so_far": ""\n'
+            '    "merged_so_far": []\n'
             "  }\n"
             "}")
 
 continuation_body = ("{\n"
-            '  "contract_version": {{toJSON(2.contract_version)}},\n'
-            '  "job_id": {{toJSON(2.job_id)}},\n'
-            '  "sync_run_id": {{toJSON(2.sync_run_id)}},\n'
-            '  "file": {{toJSON(2.file)}},\n'
-            '  "control": {{toJSON(2.control)}},\n'
-            '  "extraction": {{toJSON(2.extraction)}},\n'
-            '  "callback": {{toJSON(2.callback)}},\n'
+            '  "contract_version": {{ifempty(2.contract_version; "null")}},\n'
+            '  "job_id": "{{2.job_id}}",\n'
+            '  "sync_run_id": "{{2.sync_run_id}}",\n'
+            '  "file": {{102.json}},\n'
+            '  "control": {{103.json}},\n'
+            '  "extraction": {{104.json}},\n'
+            '  "callback": {"url": "{{2.callback.url}}", "method": "{{2.callback.method}}", "secret_header": "{{2.callback.secret_header}}"},\n'
             '  "continuation": {\n'
-            '    "text_url": {{toJSON(2.continuation.text_url)}},\n'
+            '    "text_url": "{{2.continuation.text_url}}",\n'
             '    "next_chunk": {{82.batchEnd + 1}},\n'
-            '    "merged_so_far": {{toJSON(88.textResponse)}}\n'
+            '    "merged_so_far": {{106.json}}\n'
             "  }\n"
             "}")
 
@@ -67,8 +74,9 @@ m3["filter"] = {"name": "from google drive", "conditions": [[
     {"a": "{{2.continuation.text_url}}", "o": "notexist"}]]}
 m4 = M[4]; m4["mapper"]["expiration"] = PDFCO_EXPIRATION
 m4["metadata"]["designer"]["name"] = "PDF.co: PDF to text"
-m78 = http_send(78, "Hand off to chunk processor (this scenario)", handoff_body("4.url"), -668, -601)
-route1 = [m3, m4, m78]
+m78 = http_send(78, "Hand off to chunk processor (this scenario)", handoff_body("4.url", 94, 95, 96), -218, -601)
+route1 = [m3, m4, tj(94, "file -> JSON", "{{2.file}}", -818, -601), tj(95, "control -> JSON", "{{2.control}}", -668, -601),
+          tj(96, "extraction -> JSON", "{{2.extraction}}", -518, -601), m78]
 
 # ---------------- Route 2: download URL -> PDF.co -> hand off ----------------
 m54 = M[54]
@@ -77,8 +85,9 @@ m54["filter"] = {"name": "from attachment URL", "conditions": [[
     {"a": "{{2.continuation.text_url}}", "o": "notexist"}]]}
 m60 = M[60]; m60["mapper"]["expiration"] = PDFCO_EXPIRATION
 m60["metadata"]["designer"] = {"x": -1102, "y": 84, "name": "PDF.co: PDF to text"}
-m79 = http_send(79, "Hand off to chunk processor (this scenario)", handoff_body("60.url"), -802, 84)
-route2 = [m54, m60, m79]
+m79 = http_send(79, "Hand off to chunk processor (this scenario)", handoff_body("60.url", 98, 99, 100), -352, 84)
+route2 = [m54, m60, tj(98, "file -> JSON", "{{2.file}}", -952, 84), tj(99, "control -> JSON", "{{2.control}}", -802, 84),
+          tj(100, "extraction -> JSON", "{{2.extraction}}", -652, 84), m79]
 
 # ---------------- Route 3: process one batch of chunks ----------------
 Y = 700
@@ -139,7 +148,7 @@ m86 = copy.deepcopy(M[52]); m86["id"] = 86; m86["parameters"]["feeder"] = 85
 m86["mapper"]["value"] = "{{85.array[].textResponse}}"
 m86["metadata"]["designer"] = {"x": 424, "y": Y, "name": "Join chunk results"}
 
-PRIOR = "ifempty(2.continuation.merged_so_far; emptystring)"
+PRIOR = "ifempty(first(ifempty(2.continuation.merged_so_far; emptyarray)); emptystring)"
 merge_input = (
     f'{{{{if(length({PRIOR}) > 0; "### ALREADY MERGED RESULT OF THE EARLIER CHUNKS OF THIS SAME DOCUMENT (a Stage-2 synthesized JSON). '
     'Treat it as a pre-merged chunk extraction: merge the new chunk extractions below into it and preserve all of its content. ###"; "")}}\n'
@@ -159,7 +168,7 @@ t = t.replace('"/\\{\\{chunk_extractions\\}\\}/g"; 52.text', '"/\\{\\{chunk_extr
 m88["mapper"]["messages"][0]["content"][0]["text"] = t
 m88["metadata"]["designer"] = {"x": 1024, "y": Y, "name": "Step 2: merge this batch into the running result"}
 
-m90 = http_send(90, "Continue with next batch (this scenario)", continuation_body, 1624, Y - 150)
+m90 = http_send(90, "Continue with next batch (this scenario)", continuation_body, 2224, Y - 150)
 
 m91 = copy.deepcopy(M[21]); m91["id"] = 91
 m91["mapper"]["input"] = [
@@ -172,7 +181,12 @@ m91["mapper"]["input"] = [
 m91["metadata"]["restore"]["expect"]["input"]["items"] = [None] * 6
 m91["metadata"]["designer"] = {"x": 1624, "y": Y + 150, "name": "Parse final result + build callback"}
 m91["filter"] = {"name": "last batch: finish", "conditions": [[{"a": "{{82.batchStatus}}", "o": "text:equal", "b": "last"}]]}
-m90["filter"] = {"name": "more chunks remain", "conditions": [[{"a": "{{82.batchStatus}}", "o": "text:equal", "b": "more"}]]}
+more_filter = {"name": "more chunks remain", "conditions": [[{"a": "{{82.batchStatus}}", "o": "text:equal", "b": "more"}]]}
+contA = [tj(102, "file -> JSON", "{{2.file}}", 1624, Y - 150, more_filter),
+         tj(103, "control -> JSON", "{{2.control}}", 1774, Y - 150),
+         tj(104, "extraction -> JSON", "{{2.extraction}}", 1924, Y - 150),
+         tj(106, "merged result -> JSON (1-item array)", "{{add(emptyarray; 88.textResponse)}}", 2074, Y - 150),
+         m90]
 
 m92 = copy.deepcopy(M[37]); m92["id"] = 92
 m92["mapper"]["data"] = "{{91.result.callbackBody}}"
@@ -183,7 +197,7 @@ assert "92.error.message" in m93["mapper"]["data"]
 m93["metadata"]["designer"] = {"x": 1924, "y": Y + 400, "name": "call back supabase (failed)"}
 
 m89 = {"id": 89, "module": "builtin:BasicRouter", "version": 1, "mapper": None,
-       "routes": [{"flow": [m90]}, {"flow": [m91, m92]}],
+       "routes": [{"flow": contA}, {"flow": [m91, m92]}],
        "metadata": {"designer": {"x": 1324, "y": Y}}}
 route3 = [m80, m81, m82, m83, m84, m85, m86, m87, m88, m89]
 

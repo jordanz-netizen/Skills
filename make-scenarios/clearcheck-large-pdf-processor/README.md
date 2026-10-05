@@ -64,8 +64,14 @@ A 76-chunk document takes about six chained executions (roughly an hour of wall
 time) but completes and reports back.
 
 The continuation payload carries the original `contract_version`, `job_id`,
-`sync_run_id`, `file`, `control`, `extraction` and `callback` objects
-(serialized with `toJSON()`), so the processing route needs nothing else.
+`sync_run_id`, `file`, `control`, `extraction` and `callback` values, so the
+processing route needs nothing else. Make's expression language has no JSON
+serializer (`toJSON()` does not exist, and `escapeJSON()` used by the old
+"failed" callback modules is not a documented function either), so the
+`file`, `control` and `extraction` objects are serialized with JSON >
+"Transform to JSON" modules (94-96, 98-100, 102-104) and the running merged
+result travels as a one-item JSON array (module 106) that the next execution
+reads with `first()`.
 
 Known limits left as they were:
 

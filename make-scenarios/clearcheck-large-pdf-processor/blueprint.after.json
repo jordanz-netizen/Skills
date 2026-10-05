@@ -188,6 +188,81 @@
        }
       },
       {
+       "id": 94,
+       "module": "json:TransformToJSON",
+       "version": 1,
+       "parameters": {
+        "space": ""
+       },
+       "mapper": {
+        "object": "{{2.file}}"
+       },
+       "metadata": {
+        "designer": {
+         "x": -818,
+         "y": -601,
+         "name": "file -> JSON"
+        },
+        "restore": {
+         "parameters": {
+          "space": {
+           "label": "Empty"
+          }
+         }
+        }
+       }
+      },
+      {
+       "id": 95,
+       "module": "json:TransformToJSON",
+       "version": 1,
+       "parameters": {
+        "space": ""
+       },
+       "mapper": {
+        "object": "{{2.control}}"
+       },
+       "metadata": {
+        "designer": {
+         "x": -668,
+         "y": -601,
+         "name": "control -> JSON"
+        },
+        "restore": {
+         "parameters": {
+          "space": {
+           "label": "Empty"
+          }
+         }
+        }
+       }
+      },
+      {
+       "id": 96,
+       "module": "json:TransformToJSON",
+       "version": 1,
+       "parameters": {
+        "space": ""
+       },
+       "mapper": {
+        "object": "{{2.extraction}}"
+       },
+       "metadata": {
+        "designer": {
+         "x": -518,
+         "y": -601,
+         "name": "extraction -> JSON"
+        },
+        "restore": {
+         "parameters": {
+          "space": {
+           "label": "Empty"
+          }
+         }
+        }
+       }
+      },
+      {
        "id": 78,
        "module": "http:ActionSendData",
        "version": 3,
@@ -199,7 +274,7 @@
         "ca": "",
         "qs": [],
         "url": "https://hook.us2.make.com/z1xgiq8mcp9dsbddfi9f5z3976s2nx4d",
-        "data": "{\n  \"contract_version\": {{toJSON(2.contract_version)}},\n  \"job_id\": {{toJSON(2.job_id)}},\n  \"sync_run_id\": {{toJSON(2.sync_run_id)}},\n  \"file\": {{toJSON(2.file)}},\n  \"control\": {{toJSON(2.control)}},\n  \"extraction\": {{toJSON(2.extraction)}},\n  \"callback\": {{toJSON(2.callback)}},\n  \"continuation\": {\n    \"text_url\": {{toJSON(4.url)}},\n    \"next_chunk\": 1,\n    \"merged_so_far\": \"\"\n  }\n}",
+        "data": "{\n  \"contract_version\": {{ifempty(2.contract_version; \"null\")}},\n  \"job_id\": \"{{2.job_id}}\",\n  \"sync_run_id\": \"{{2.sync_run_id}}\",\n  \"file\": {{94.json}},\n  \"control\": {{95.json}},\n  \"extraction\": {{96.json}},\n  \"callback\": {\"url\": \"{{2.callback.url}}\", \"method\": \"{{2.callback.method}}\", \"secret_header\": \"{{2.callback.secret_header}}\"},\n  \"continuation\": {\n    \"text_url\": \"{{4.url}}\",\n    \"next_chunk\": 1,\n    \"merged_so_far\": []\n  }\n}",
         "gzip": true,
         "method": "post",
         "headers": [
@@ -222,7 +297,7 @@
        },
        "metadata": {
         "designer": {
-         "x": -668,
+         "x": -218,
          "y": -601,
          "name": "Hand off to chunk processor (this scenario)"
         },
@@ -365,6 +440,81 @@
        }
       },
       {
+       "id": 98,
+       "module": "json:TransformToJSON",
+       "version": 1,
+       "parameters": {
+        "space": ""
+       },
+       "mapper": {
+        "object": "{{2.file}}"
+       },
+       "metadata": {
+        "designer": {
+         "x": -952,
+         "y": 84,
+         "name": "file -> JSON"
+        },
+        "restore": {
+         "parameters": {
+          "space": {
+           "label": "Empty"
+          }
+         }
+        }
+       }
+      },
+      {
+       "id": 99,
+       "module": "json:TransformToJSON",
+       "version": 1,
+       "parameters": {
+        "space": ""
+       },
+       "mapper": {
+        "object": "{{2.control}}"
+       },
+       "metadata": {
+        "designer": {
+         "x": -802,
+         "y": 84,
+         "name": "control -> JSON"
+        },
+        "restore": {
+         "parameters": {
+          "space": {
+           "label": "Empty"
+          }
+         }
+        }
+       }
+      },
+      {
+       "id": 100,
+       "module": "json:TransformToJSON",
+       "version": 1,
+       "parameters": {
+        "space": ""
+       },
+       "mapper": {
+        "object": "{{2.extraction}}"
+       },
+       "metadata": {
+        "designer": {
+         "x": -652,
+         "y": 84,
+         "name": "extraction -> JSON"
+        },
+        "restore": {
+         "parameters": {
+          "space": {
+           "label": "Empty"
+          }
+         }
+        }
+       }
+      },
+      {
        "id": 79,
        "module": "http:ActionSendData",
        "version": 3,
@@ -376,7 +526,7 @@
         "ca": "",
         "qs": [],
         "url": "https://hook.us2.make.com/z1xgiq8mcp9dsbddfi9f5z3976s2nx4d",
-        "data": "{\n  \"contract_version\": {{toJSON(2.contract_version)}},\n  \"job_id\": {{toJSON(2.job_id)}},\n  \"sync_run_id\": {{toJSON(2.sync_run_id)}},\n  \"file\": {{toJSON(2.file)}},\n  \"control\": {{toJSON(2.control)}},\n  \"extraction\": {{toJSON(2.extraction)}},\n  \"callback\": {{toJSON(2.callback)}},\n  \"continuation\": {\n    \"text_url\": {{toJSON(60.url)}},\n    \"next_chunk\": 1,\n    \"merged_so_far\": \"\"\n  }\n}",
+        "data": "{\n  \"contract_version\": {{ifempty(2.contract_version; \"null\")}},\n  \"job_id\": \"{{2.job_id}}\",\n  \"sync_run_id\": \"{{2.sync_run_id}}\",\n  \"file\": {{98.json}},\n  \"control\": {{99.json}},\n  \"extraction\": {{100.json}},\n  \"callback\": {\"url\": \"{{2.callback.url}}\", \"method\": \"{{2.callback.method}}\", \"secret_header\": \"{{2.callback.secret_header}}\"},\n  \"continuation\": {\n    \"text_url\": \"{{60.url}}\",\n    \"next_chunk\": 1,\n    \"merged_so_far\": []\n  }\n}",
         "gzip": true,
         "method": "post",
         "headers": [
@@ -399,7 +549,7 @@
        },
        "metadata": {
         "designer": {
-         "x": -802,
+         "x": -352,
          "y": 84,
          "name": "Hand off to chunk processor (this scenario)"
         },
@@ -842,7 +992,7 @@
         "variables": [
          {
           "name": "mergeInput",
-          "value": "{{if(length(ifempty(2.continuation.merged_so_far; emptystring)) > 0; \"### ALREADY MERGED RESULT OF THE EARLIER CHUNKS OF THIS SAME DOCUMENT (a Stage-2 synthesized JSON). Treat it as a pre-merged chunk extraction: merge the new chunk extractions below into it and preserve all of its content. ###\"; \"\")}}\n{{ifempty(2.continuation.merged_so_far; emptystring)}}\n{{if(length(ifempty(2.continuation.merged_so_far; emptystring)) > 0; \"### NEW CHUNK EXTRACTIONS FOR CHUNKS \"; \"\")}}{{if(length(ifempty(2.continuation.merged_so_far; emptystring)) > 0; 82.batchStart; \"\")}}{{if(length(ifempty(2.continuation.merged_so_far; emptystring)) > 0; \" TO \"; \"\")}}{{if(length(ifempty(2.continuation.merged_so_far; emptystring)) > 0; 82.batchEnd; \"\")}}{{if(length(ifempty(2.continuation.merged_so_far; emptystring)) > 0; \" OF \"; \"\")}}{{if(length(ifempty(2.continuation.merged_so_far; emptystring)) > 0; 81.totalChunks; \"\")}}{{if(length(ifempty(2.continuation.merged_so_far; emptystring)) > 0; \" ###\"; \"\")}}\n{{86.text}}"
+          "value": "{{if(length(ifempty(first(ifempty(2.continuation.merged_so_far; emptyarray)); emptystring)) > 0; \"### ALREADY MERGED RESULT OF THE EARLIER CHUNKS OF THIS SAME DOCUMENT (a Stage-2 synthesized JSON). Treat it as a pre-merged chunk extraction: merge the new chunk extractions below into it and preserve all of its content. ###\"; \"\")}}\n{{ifempty(first(ifempty(2.continuation.merged_so_far; emptyarray)); emptystring)}}\n{{if(length(ifempty(first(ifempty(2.continuation.merged_so_far; emptyarray)); emptystring)) > 0; \"### NEW CHUNK EXTRACTIONS FOR CHUNKS \"; \"\")}}{{if(length(ifempty(first(ifempty(2.continuation.merged_so_far; emptyarray)); emptystring)) > 0; 82.batchStart; \"\")}}{{if(length(ifempty(first(ifempty(2.continuation.merged_so_far; emptyarray)); emptystring)) > 0; \" TO \"; \"\")}}{{if(length(ifempty(first(ifempty(2.continuation.merged_so_far; emptyarray)); emptystring)) > 0; 82.batchEnd; \"\")}}{{if(length(ifempty(first(ifempty(2.continuation.merged_so_far; emptyarray)); emptystring)) > 0; \" OF \"; \"\")}}{{if(length(ifempty(first(ifempty(2.continuation.merged_so_far; emptyarray)); emptystring)) > 0; 81.totalChunks; \"\")}}{{if(length(ifempty(first(ifempty(2.continuation.merged_so_far; emptyarray)); emptystring)) > 0; \" ###\"; \"\")}}\n{{86.text}}"
          }
         ]
        },
@@ -1011,6 +1161,118 @@
         {
          "flow": [
           {
+           "id": 102,
+           "module": "json:TransformToJSON",
+           "version": 1,
+           "parameters": {
+            "space": ""
+           },
+           "mapper": {
+            "object": "{{2.file}}"
+           },
+           "metadata": {
+            "designer": {
+             "x": 1624,
+             "y": 550,
+             "name": "file -> JSON"
+            },
+            "restore": {
+             "parameters": {
+              "space": {
+               "label": "Empty"
+              }
+             }
+            }
+           },
+           "filter": {
+            "name": "more chunks remain",
+            "conditions": [
+             [
+              {
+               "a": "{{82.batchStatus}}",
+               "o": "text:equal",
+               "b": "more"
+              }
+             ]
+            ]
+           }
+          },
+          {
+           "id": 103,
+           "module": "json:TransformToJSON",
+           "version": 1,
+           "parameters": {
+            "space": ""
+           },
+           "mapper": {
+            "object": "{{2.control}}"
+           },
+           "metadata": {
+            "designer": {
+             "x": 1774,
+             "y": 550,
+             "name": "control -> JSON"
+            },
+            "restore": {
+             "parameters": {
+              "space": {
+               "label": "Empty"
+              }
+             }
+            }
+           }
+          },
+          {
+           "id": 104,
+           "module": "json:TransformToJSON",
+           "version": 1,
+           "parameters": {
+            "space": ""
+           },
+           "mapper": {
+            "object": "{{2.extraction}}"
+           },
+           "metadata": {
+            "designer": {
+             "x": 1924,
+             "y": 550,
+             "name": "extraction -> JSON"
+            },
+            "restore": {
+             "parameters": {
+              "space": {
+               "label": "Empty"
+              }
+             }
+            }
+           }
+          },
+          {
+           "id": 106,
+           "module": "json:TransformToJSON",
+           "version": 1,
+           "parameters": {
+            "space": ""
+           },
+           "mapper": {
+            "object": "{{add(emptyarray; 88.textResponse)}}"
+           },
+           "metadata": {
+            "designer": {
+             "x": 2074,
+             "y": 550,
+             "name": "merged result -> JSON (1-item array)"
+            },
+            "restore": {
+             "parameters": {
+              "space": {
+               "label": "Empty"
+              }
+             }
+            }
+           }
+          },
+          {
            "id": 90,
            "module": "http:ActionSendData",
            "version": 3,
@@ -1022,7 +1284,7 @@
             "ca": "",
             "qs": [],
             "url": "https://hook.us2.make.com/z1xgiq8mcp9dsbddfi9f5z3976s2nx4d",
-            "data": "{\n  \"contract_version\": {{toJSON(2.contract_version)}},\n  \"job_id\": {{toJSON(2.job_id)}},\n  \"sync_run_id\": {{toJSON(2.sync_run_id)}},\n  \"file\": {{toJSON(2.file)}},\n  \"control\": {{toJSON(2.control)}},\n  \"extraction\": {{toJSON(2.extraction)}},\n  \"callback\": {{toJSON(2.callback)}},\n  \"continuation\": {\n    \"text_url\": {{toJSON(2.continuation.text_url)}},\n    \"next_chunk\": {{82.batchEnd + 1}},\n    \"merged_so_far\": {{toJSON(88.textResponse)}}\n  }\n}",
+            "data": "{\n  \"contract_version\": {{ifempty(2.contract_version; \"null\")}},\n  \"job_id\": \"{{2.job_id}}\",\n  \"sync_run_id\": \"{{2.sync_run_id}}\",\n  \"file\": {{102.json}},\n  \"control\": {{103.json}},\n  \"extraction\": {{104.json}},\n  \"callback\": {\"url\": \"{{2.callback.url}}\", \"method\": \"{{2.callback.method}}\", \"secret_header\": \"{{2.callback.secret_header}}\"},\n  \"continuation\": {\n    \"text_url\": \"{{2.continuation.text_url}}\",\n    \"next_chunk\": {{82.batchEnd + 1}},\n    \"merged_so_far\": {{106.json}}\n  }\n}",
             "gzip": true,
             "method": "post",
             "headers": [
@@ -1045,7 +1307,7 @@
            },
            "metadata": {
             "designer": {
-             "x": 1624,
+             "x": 2224,
              "y": 550,
              "name": "Continue with next batch (this scenario)"
             },
@@ -1072,18 +1334,6 @@
               }
              }
             }
-           },
-           "filter": {
-            "name": "more chunks remain",
-            "conditions": [
-             [
-              {
-               "a": "{{82.batchStatus}}",
-               "o": "text:equal",
-               "b": "more"
-              }
-             ]
-            ]
            }
           }
          ]
