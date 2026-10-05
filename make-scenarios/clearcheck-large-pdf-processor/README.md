@@ -32,13 +32,20 @@ modules, which have no sandbox time limit:
 | 6 / 61 `code:ExecuteCode` (chunker) | 74 / 76 `util:SetVariables` | Stores `pdfText`, `pdfLength`, `totalChunks` once per run |
 | 15 / 62 `builtin:BasicFeeder` (Iterator) | 75 / 77 `builtin:BasicRepeater` | Emits one bundle per chunk (`i` = chunk number) |
 
-Chunking math (same 600,000-char chunk size the old code used, plus a
-5,000-char overlap so a record cut at a boundary is still whole in the next chunk):
+Chunking math (350,000-char chunks plus a 5,000-char overlap so a record cut
+at a boundary is still whole in the next chunk):
 
 ```
-totalChunks = if(len <= 600000; 1; ceil((len - 600000) / 595000) + 1)
-chunk i     = substring(pdfText; (i - 1) * 595000; (i - 1) * 595000 + 600000)
+totalChunks = if(len <= 350000; 1; ceil((len - 350000) / 345000) + 1)
+chunk i     = substring(pdfText; (i - 1) * 345000; (i - 1) * 345000 + 350000)
 ```
+
+The old code used 600,000-char chunks (it assumed 4 chars per token). The first
+live run after the fix showed that dense evidence text tokenizes at about 2.9
+chars per token: one 600,000-char chunk came to 209,318 tokens and Claude
+rejected it (`[400] prompt is too long: 209318 tokens > 200000 maximum`).
+350,000 chars stays under the 200k-token window even at 2 chars per token with
+the 10k-token output budget included.
 
 Downstream modules were rewired:
 

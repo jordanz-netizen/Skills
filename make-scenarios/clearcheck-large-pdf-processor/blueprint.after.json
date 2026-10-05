@@ -234,7 +234,7 @@
                   },
                   {
                     "name": "totalChunks",
-                    "value": "{{if(length(toString(72.data)) <= 600000; 1; ceil((length(toString(72.data)) - 600000) / 595000) + 1)}}"
+                    "value": "{{if(length(toString(72.data)) <= 350000; 1; ceil((length(toString(72.data)) - 350000) / 345000) + 1)}}"
                   }
                 ]
               },
@@ -306,7 +306,7 @@
                     "role": "user",
                     "content": [
                       {
-                        "text": "{{replace(replace(replace(replace(replace(replace(2.extraction.step_1.user_prompt_template; \"/\\{\\{control_description\\}\\}/g\"; 2.control.description); \"/\\{\\{tscs\\}\\}/g\"; 2.control.tscs); \"/\\{\\{expected_procedures\\}\\}/g\"; 2.control.expected_procedures); \"/\\{\\{evidence_text\\}\\}/g\"; substring(74.pdfText; (75.i - 1) * 595000; (75.i - 1) * 595000 + 600000)); \"/\\{\\{chunk_number\\}\\}/g\"; 75.i); \"/\\{\\{total_chunks\\}\\}/g\"; 74.totalChunks)}}",
+                        "text": "{{replace(replace(replace(replace(replace(replace(2.extraction.step_1.user_prompt_template; \"/\\{\\{control_description\\}\\}/g\"; 2.control.description); \"/\\{\\{tscs\\}\\}/g\"; 2.control.tscs); \"/\\{\\{expected_procedures\\}\\}/g\"; 2.control.expected_procedures); \"/\\{\\{evidence_text\\}\\}/g\"; substring(74.pdfText; (75.i - 1) * 345000; (75.i - 1) * 345000 + 350000)); \"/\\{\\{chunk_number\\}\\}/g\"; 75.i); \"/\\{\\{total_chunks\\}\\}/g\"; 74.totalChunks)}}",
                         "type": "text"
                       }
                     ],
@@ -1032,7 +1032,7 @@
                   },
                   {
                     "name": "totalChunks",
-                    "value": "{{if(length(toString(73.data)) <= 600000; 1; ceil((length(toString(73.data)) - 600000) / 595000) + 1)}}"
+                    "value": "{{if(length(toString(73.data)) <= 350000; 1; ceil((length(toString(73.data)) - 350000) / 345000) + 1)}}"
                   }
                 ]
               },
@@ -1104,7 +1104,7 @@
                     "role": "user",
                     "content": [
                       {
-                        "text": "{{replace(replace(replace(replace(replace(replace(2.extraction.step_1.user_prompt_template; \"/\\{\\{control_description\\}\\}/g\"; 2.control.description); \"/\\{\\{tscs\\}\\}/g\"; 2.control.tscs); \"/\\{\\{expected_procedures\\}\\}/g\"; 2.control.expected_procedures); \"/\\{\\{evidence_text\\}\\}/g\"; substring(76.pdfText; (77.i - 1) * 595000; (77.i - 1) * 595000 + 600000)); \"/\\{\\{chunk_number\\}\\}/g\"; 77.i); \"/\\{\\{total_chunks\\}\\}/g\"; 76.totalChunks)}}",
+                        "text": "{{replace(replace(replace(replace(replace(replace(2.extraction.step_1.user_prompt_template; \"/\\{\\{control_description\\}\\}/g\"; 2.control.description); \"/\\{\\{tscs\\}\\}/g\"; 2.control.tscs); \"/\\{\\{expected_procedures\\}\\}/g\"; 2.control.expected_procedures); \"/\\{\\{evidence_text\\}\\}/g\"; substring(76.pdfText; (77.i - 1) * 345000; (77.i - 1) * 345000 + 350000)); \"/\\{\\{chunk_number\\}\\}/g\"; 77.i); \"/\\{\\{total_chunks\\}\\}/g\"; 76.totalChunks)}}",
                         "type": "text"
                       }
                     ],
