@@ -81,6 +81,21 @@ Known limits left as they were:
 - Empty extracted text stops the run at the "PDF text not empty" filter without
   a callback, exactly like the old "No text from PDF.co" error.
 
+## Live test (2026-10-05)
+
+Replaying one of the three stranded jobs (22.6 MB source-control PDF, about
+45 MB of extracted text, 130 chunks) through the chained design:
+
+| Execution | Role | Duration | Ops | Result |
+|---|---|---|---|---|
+| 1b287ae9 | Drive download, PDF.co, hand-off | 6.2 min | 7 | success |
+| 44713837 | chunks 1-15 + merge + hand-off | 9.9 min | 29 | success |
+| 62eac24c ... 4e687b71 | chunks 16-120 (7 batches of 15) | 9.4-11.0 min each | 29 each | success |
+| 904f5a23 | chunks 121-130 + merge + parser + Supabase callback | 7.1 min | 21 | success |
+
+Total wall time about 96 minutes, every execution well inside Make's limit,
+callback delivered. The other two stranded jobs were replayed afterwards.
+
 ## Files
 
 - `blueprint.before.json` - export of the scenario before the fix
